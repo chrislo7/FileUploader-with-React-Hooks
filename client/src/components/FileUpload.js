@@ -2,12 +2,14 @@ import React, { Fragment, useState } from 'react';
 import axios from 'axios';
 import ValidateExtension from '../Functions';
 import Message from './Message';
+import Progress from './Progress';
 
 const FileUpload = () => {
     const [file, setFile] = useState('');
     const [filename, setFilename] = useState('Upload an Image');
     const [uploadedFile, setUploadedFile] = useState({});
     const [message, setMessage] = useState('');
+    const [uploadPercentage, setUploadPercentage] = useState(0);
 
     const onChange = e => {
         setFile(e.target.files[0]); // only require the first one.
@@ -23,6 +25,15 @@ const FileUpload = () => {
             const res = await axios.post('/upload', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
+                },
+
+                onUploadProgress: progressEvent => {
+                    // upload percentage
+                    setUploadPercentage(
+                        parseInt( Math.round(progressEvent.loaded * 100) / progressEvent.total )
+                    );
+                    //clear percentage
+                    setTimeout(() => setUploadPercentage(0), 10000);
                 }
             });
 
@@ -35,9 +46,9 @@ const FileUpload = () => {
             }
         } catch (err) {
             if ( err.response.status === 500 ) {
-                console.log('A problem with the server has occured.');
+                setMessage('A problem with the server has occured.');
             } else {
-                console.log(err.response.data.msg);
+                setMessage(err.response.data.msg);
             }
         }
     }
@@ -52,6 +63,8 @@ const FileUpload = () => {
                     {filename}
                 </label>
             </div>
+
+            <Progress percentage={ uploadPercentage }/>
 
             <input type="submit" value="Upload" className="btn btn-primary btn-block mt-4"/>
             </form>
